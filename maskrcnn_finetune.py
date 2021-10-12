@@ -10,7 +10,7 @@ import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 
-from engine import train_one_epoch
+from engine import train_one_epoch, evaluate
 import utils
 import transforms as T
 
@@ -34,14 +34,15 @@ class DivingWithMasksDataset(object):
         # with 0 being background
         mask = Image.open(mask_path)
 
-
         mask = np.array(mask)
 
         # instances are encoded as different colors
         obj_ids = np.unique(mask)
+
         # first id is the background, so remove it
         obj_ids = obj_ids[1:]
         unique_colors = np.unique(mask.reshape(-1,3), axis=0)[1:]
+
         # split the color-encoded mask into a set
         # of binary masks
         masks = []
@@ -51,7 +52,6 @@ class DivingWithMasksDataset(object):
             # Check unique colours in mask
             # print(np.unique(mask_unique.reshape(-1, 1), axis=0))
             masks.append(mask_unique)
-        # masks = mask == obj_ids[:, None, None]
 
         # get bounding box coordinates for each mask
         num_objs = len(obj_ids)
@@ -158,7 +158,7 @@ def main():
                                                    gamma=0.1)
 
     # let's train it for 10 epochs
-    num_epochs = 1
+    num_epochs = 10
 
     for epoch in range(num_epochs):
         # train for one epoch, printing every 10 iterations
@@ -169,7 +169,7 @@ def main():
         # update the learning rate
         lr_scheduler.step()
         # evaluate on the test dataset
-        # evaluate(model, data_loader_test, device=device)
+        evaluate(model, data_loader_test, device=device)
 
     print("That's it!")
     
