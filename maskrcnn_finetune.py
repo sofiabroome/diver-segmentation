@@ -28,6 +28,7 @@ class DivingWithMasksDataset(object):
         # load images and masks
         img_path = os.path.join(self.root, "images", self.imgs[idx])
         mask_path = os.path.join(self.root, "masks", self.masks[idx])
+        # print('\n', img_path, mask_path)
         img = Image.open(img_path).convert("RGB")
         # note that we haven't converted the mask to RGB,
         # because each color corresponds to a different instance
@@ -47,6 +48,7 @@ class DivingWithMasksDataset(object):
         # of binary masks
         masks = []
         for uc in unique_colors:
+            # print(mask.shape, uc)
             mask_unique = np.where(np.all(mask == uc, axis=2), 1, 0)
             # print('mask unique shape: ', mask_unique.shape)
             # Check unique colours in mask
@@ -125,13 +127,13 @@ def main():
     # our dataset has two classes only - background and person
     num_classes = 2
     # use our dataset and defined transformations
-    dataset = DivingWithMasksDataset('data/test_frames', get_transform(train=True))
-    dataset_test = DivingWithMasksDataset('data/test_frames', get_transform(train=False))
+    dataset = DivingWithMasksDataset('/proj/berzelius_pilot/users/x_sofbr/diving48/100_frames_with_masks', get_transform(train=True))
+    dataset_test = DivingWithMasksDataset('/proj/berzelius_pilot/users/x_sofbr/diving48/100_frames_with_masks', get_transform(train=False))
 
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()
-    dataset = torch.utils.data.Subset(dataset, indices)
-    dataset_test = torch.utils.data.Subset(dataset_test, indices)
+    dataset = torch.utils.data.Subset(dataset, indices[:-10])
+    dataset_test = torch.utils.data.Subset(dataset_test, indices[:-10])
 
     # define training and validation data loaders
     data_loader = torch.utils.data.DataLoader(
@@ -158,7 +160,7 @@ def main():
                                                    gamma=0.1)
 
     # let's train it for 10 epochs
-    num_epochs = 10
+    num_epochs = 100
 
     for epoch in range(num_epochs):
         # train for one epoch, printing every 10 iterations
