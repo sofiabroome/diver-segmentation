@@ -29,11 +29,9 @@ class DivingWithMasksDataset(object):
         mask = np.array(mask)
 
         # instances are encoded as different colors
-        obj_ids = np.unique(mask)
-
         # first id is the background, so remove it
-        obj_ids = obj_ids[1:]
-        unique_colors = np.unique(mask.reshape(-1,3), axis=0)[1:]
+        unique_colors = np.unique(mask.reshape(-1, 3), axis=0)[1:]
+        num_objs = len(unique_colors)
 
         # split the color-encoded mask into a set
         # of binary masks
@@ -46,7 +44,6 @@ class DivingWithMasksDataset(object):
             masks.append(mask_unique)
 
         # get bounding box coordinates for each mask
-        num_objs = len(obj_ids)
         boxes = []
         for i in range(num_objs):
             pos = np.where(masks[i])

@@ -2,6 +2,7 @@ import datetime
 import errno
 import os
 import time
+import json
 from collections import defaultdict, deque
 
 import torch
@@ -286,3 +287,12 @@ def listdir_nohidden(path):
     for f in os.listdir(path):
         if not f.startswith('.'):
             yield f
+
+
+def load_json_config(path):
+    """ loads a json config file"""
+    with open(path) as data_file:
+        config = json.load(data_file)
+    return config
+
+

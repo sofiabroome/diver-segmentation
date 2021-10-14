@@ -1,5 +1,6 @@
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
+from prettytable import PrettyTable
 import pytorch_lightning as pl
 from torch import nn
 import torchmetrics
@@ -8,7 +9,8 @@ import torch
 
 
 class InstanceSegmentationModule(pl.LightningModule):
-    def __init__(self, optimizer, num_classes, lr, momentum, weight_decay):
+    def __init__(self, optimizer, num_classes, lr, momentum, weight_decay,
+                 num_hidden_mask_predictor):
         super(InstanceSegmentationModule, self).__init__()
 
         self.num_classes = num_classes
@@ -16,43 +18,51 @@ class InstanceSegmentationModule(pl.LightningModule):
         self.lr = lr
         self.momentum = momentum
         self.weight_decay = weight_decay
-        self.model = get_model_instance_segmentation(self.num_classes)
-        self.flatten = nn.Flatten(start_dim=1, end_dim=-1)
+        self.num_hidden_mask_predictor = num_hidden_mask_predictor
+        self.model = get_model_instance_segmentation(self.num_classes, self.num_hidden_mask_predictor)
         self.iou = torchmetrics.IoU(num_classes=2)
         self.save_hyperparameters()
 
-    def forward(self, x) -> torch.Tensor:
-        x = self.model(x)
-        return x
+    # def forward(self, x) -> torch.Tensor:
+    #     x = self.model(x)
+    #     return x
 
-    @staticmethod
-    def loss_function(y_hat, y):
-        criterion = nn.CrossEntropyLoss()
-        loss = criterion(y_hat, y)
-        return loss
+    def forward(self, x, y) -> dict:
+        loss_dict = self.model(x, y)
+        return loss_dict
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         loss_dict = self(x, y)
-        self.log('train_iou', loss_dict['iou'], prog_bar=True)
-        self.log('train_loss', loss_dict['loss'], prog_bar=True)
-        return {'loss': loss_dict['loss']}
+        sum_losses = sum(loss for loss in loss_dict.values())
+        # self.log('train_iou', loss_dict['iou'], prog_bar=True)
+        self.log('train_loss', sum_losses, prog_bar=True)
+        self.log('train_loss_cl', loss_dict['loss_classifier'], prog_bar=True)
+        self.log('train_loss_box_reg', loss_dict['loss_box_reg'], prog_bar=True)
+        self.log('train_loss_mask', loss_dict['loss_mask'], prog_bar=True)
+        self.log('train_loss_objectness', loss_dict['loss_objectness'], prog_bar=True)
+        self.log('train_loss_rpn_box_reg', loss_dict['loss_rpn_box_reg'], prog_bar=True)
+        return {'loss': sum_losses}
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         loss_dict = self(x, y)
-        self.log('val_iou', loss_dict['iou'], prog_bar=True)
-        self.log('val_loss', loss_dict['loss'], prog_bar=True)
+        print(len(loss_dict))
+        import ipdb; ipdb
+        sum_losses = sum(loss for loss in loss_dict.values())
+        # self.log('val_iou', loss_dict['iou'], prog_bar=True)
+        self.log('val_loss', sum_losses, prog_bar=True)
         # By default, on_step=False, on_epoch=True for log calls in val and test
-        return {'val_loss': loss_dict['loss']}
+        return {'val_loss': sum_losses}
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         loss_dict = self(x, y)
-        self.log('test_iou', loss_dict['iou'], prog_bar=True)
+        sum_losses = sum(loss for loss in loss_dict.values())
+        # self.log('test_iou', loss_dict['iou'], prog_bar=True)
         self.log('test_loss', loss_dict['loss'], prog_bar=True)
         # By default, on_step=False, on_epoch=True for log calls in val and test
-        return {'test_loss': loss_dict['loss']}
+        return {'test_loss': sum_losses}
 
     def configure_optimizers(self):
         if self.optimizer == 'SGD':
@@ -80,3 +90,18 @@ def get_model_instance_segmentation(num_classes, hidden_layer):
     return model
 
 
+def count_parameters(model):
+    table = PrettyTable(["Modules", "Parameters"])
+    total_params = 0
+    encoder_params = 0
+    print(model.named_parameters())
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad: continue
+        param = parameter.numel()
+        table.add_row([name, param])
+        total_params+=param
+        if not 'linear' in name:
+            encoder_params += param
+    print(table)
+    print(f"Total Trainable Params: {total_params}")
+    return encoder_params, total_params
