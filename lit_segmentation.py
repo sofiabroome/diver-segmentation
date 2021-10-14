@@ -2,6 +2,7 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 from prettytable import PrettyTable
 import pytorch_lightning as pl
+from pl_bolts.metrics.object_detection import iou
 from torch import nn
 import torchmetrics
 import torchvision
@@ -20,7 +21,8 @@ class InstanceSegmentationModule(pl.LightningModule):
         self.weight_decay = weight_decay
         self.num_hidden_mask_predictor = num_hidden_mask_predictor
         self.model = get_model_instance_segmentation(self.num_classes, self.num_hidden_mask_predictor)
-        self.iou = torchmetrics.IoU(num_classes=2)
+        # self.iou = torchmetrics.IoU(num_classes=2)
+        self.iou = iou
         self.save_hyperparameters()
 
     # def forward(self, x) -> torch.Tensor:
@@ -46,14 +48,18 @@ class InstanceSegmentationModule(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        loss_dict = self(x, y)
-        print(len(loss_dict))
-        import ipdb; ipdb
-        sum_losses = sum(loss for loss in loss_dict.values())
-        # self.log('val_iou', loss_dict['iou'], prog_bar=True)
-        self.log('val_loss', sum_losses, prog_bar=True)
+        output = self(x, y)
+        # print(len(loss_dict))
+        # print('\n')
+        # print(loss_dict[0])
+        # print('\n')
+        # print(loss_dict[1])
+        # print('\n')
+        val_iou = self.get_inference_metrics(output, y)
+        self.log('val_iou_boxes', val_iou, prog_bar=True)
+        # self.log('val_loss', sum_losses, prog_bar=True)
         # By default, on_step=False, on_epoch=True for log calls in val and test
-        return {'val_loss': sum_losses}
+        return {'val_iou_boxes': val_iou}
 
     def test_step(self, batch, batch_idx):
         x, y = batch
@@ -63,6 +69,15 @@ class InstanceSegmentationModule(pl.LightningModule):
         self.log('test_loss', loss_dict['loss'], prog_bar=True)
         # By default, on_step=False, on_epoch=True for log calls in val and test
         return {'test_loss': sum_losses}
+
+    def get_inference_metrics(self, output, y):
+        outputs = [{k: v for k, v in t.items()} for t in output]
+        batch_size = len(outputs)
+        val_iou = 0
+        for ind, o in enumerate(outputs):
+            sample_iou = self.iou(o['boxes'], y[ind]['boxes'])
+            val_iou += sample_iou
+        return val_iou/batch_size
 
     def configure_optimizers(self):
         if self.optimizer == 'SGD':
