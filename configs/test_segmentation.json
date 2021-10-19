@@ -3,7 +3,7 @@
     "output_dir": "results/",
     "ckpt_path": "trained_models/segm_130829/epoch=27-val_loss=0.00-val_iou_boxes=0.9070.ckpt",
 
-    "data_folder": "/Users/sbroome/Downloads/rgb/",
+    "data_folder": "/Users/sbroome/Downloads/diving48_mp4/",
 
     "json_data_train": "/Users/sbroome/Downloads/Diving48_V2_train.json",
     "json_data_val": "/Users/sbroome/Downloads/Diving48_V2_test.json",
