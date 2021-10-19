@@ -43,12 +43,15 @@ class VideoFramesForSegmentation(torch.utils.data.Dataset):
         #     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         # ])
 
-        preprocess = transforms.Compose([
-            transforms.ToTensor()
-        ])
-        imgs = [preprocess(img) for img in imgs]
         evenly_spaced_frame_indices = np.round(np.linspace(0, len(imgs) - 1, self.clip_size)).astype(int)
         imgs = [imgs[ind] for ind in evenly_spaced_frame_indices]
+
+        preprocess = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize((369, 492))
+        ])
+
+        imgs = [preprocess(img) for img in imgs]
 
         # format data to torch
         data = torch.stack(imgs)
