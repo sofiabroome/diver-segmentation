@@ -5,7 +5,7 @@ import torch
 from lit_segmentation import get_model_instance_segmentation
 
 from engine import train_one_epoch, evaluate
-from dataset import DivingWithMasksDataset
+from dataset import DivingWithMasksDataset, get_transform
 import utils
 
 
@@ -16,8 +16,8 @@ def main():
     # our dataset has two classes only - background and person
     num_classes = 2
     # use our dataset and defined transformations
-    dataset = DivingWithMasksDataset('/proj/berzelius_pilot/users/x_sofbr/diving48/100_frames_with_masks', get_transform(train=True))
-    dataset_test = DivingWithMasksDataset('/proj/berzelius_pilot/users/x_sofbr/diving48/100_frames_with_masks', get_transform(train=False))
+    dataset = DivingWithMasksDataset('/proj/berzelius_pilot/users/x_sofbr/diving48/304_frames_with_masks', get_transform(train=True))
+    dataset_test = DivingWithMasksDataset('/proj/berzelius_pilot/users/x_sofbr/diving48/304_frames_with_masks', get_transform(train=False))
 
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()
@@ -49,7 +49,7 @@ def main():
                                                    gamma=0.1)
 
     # let's train it for 10 epochs
-    num_epochs = 3
+    num_epochs = 100
 
     for epoch in range(num_epochs):
         # train for one epoch, printing every 10 iterations
