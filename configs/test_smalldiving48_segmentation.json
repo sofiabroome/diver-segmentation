@@ -6,16 +6,15 @@
     "data_folder": "/proj/berzelius_pilot/users/x_sofbr/diving48/small_diving48/",
 
     "json_data_train": "/proj/berzelius_pilot/users/x_sofbr/diving48/small_diving48/smalldiving.json",
-    "json_data_val": "/proj/berzelius_pilot/users/x_sofbr/diving48/Diving48_V2_test.json",
-    "json_data_test": "/proj/berzelius_pilot/users/x_sofbr/diving48/Diving48_V2_test.json",
-
+    "json_data_val": "/proj/berzelius_pilot/users/x_sofbr/diving48/small_diving48/smalldiving.json",
+    "json_data_test": "/proj/berzelius_pilot/users/x_sofbr/diving48/small_diving48/smalldiving.json",
     "json_file_labels": "/proj/berzelius_pilot/users/x_sofbr/diving48/Diving48_vocab.json",
     "nb_train_samples": 13525,
     "nb_val_samples": 1502,
 
     "num_workers": 0,
 
-    "batch_size": 64,
+    "batch_size": 1,
     "clip_size": 32,
     "nb_labels": 48,
 

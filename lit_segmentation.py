@@ -1,8 +1,8 @@
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
+from pl_bolts.metrics.object_detection import iou
 from prettytable import PrettyTable
 import pytorch_lightning as pl
-from pl_bolts.metrics.object_detection import iou
 from torch import nn
 import torchmetrics
 import torchvision
@@ -21,23 +21,17 @@ class InstanceSegmentationModule(pl.LightningModule):
         self.weight_decay = weight_decay
         self.num_hidden_mask_predictor = num_hidden_mask_predictor
         self.model = get_model_instance_segmentation(self.num_classes, self.num_hidden_mask_predictor)
-        # self.iou = torchmetrics.IoU(num_classes=2)
         self.iou = iou
         self.save_hyperparameters()
 
-    # def forward(self, x) -> torch.Tensor:
-    #     x = self.model(x)
-    #     return x
-
-    def forward(self, x, y) -> dict:
-        loss_dict = self.model(x, y)
-        return loss_dict
+    def forward(self, x) -> torch.Tensor:
+        x = self.model(x)
+        return x
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         loss_dict = self(x, y)
         sum_losses = sum(loss for loss in loss_dict.values())
-        # self.log('train_iou', loss_dict['iou'], prog_bar=True)
         self.log('train_loss', sum_losses, prog_bar=True)
         self.log('train_loss_cl', loss_dict['loss_classifier'], prog_bar=True)
         self.log('train_loss_box_reg', loss_dict['loss_box_reg'], prog_bar=True)
@@ -49,15 +43,8 @@ class InstanceSegmentationModule(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         output = self(x, y)
-        # print(len(loss_dict))
-        # print('\n')
-        # print(loss_dict[0])
-        # print('\n')
-        # print(loss_dict[1])
-        # print('\n')
         val_iou = self.get_inference_metrics(output, y)
         self.log('val_iou_boxes', val_iou, prog_bar=True)
-        # self.log('val_loss', sum_losses, prog_bar=True)
         # By default, on_step=False, on_epoch=True for log calls in val and test
         return {'val_iou_boxes': val_iou}
 
@@ -128,3 +115,4 @@ def count_parameters(model):
     print(table)
     print(f"Total Trainable Params: {total_params}")
     return encoder_params, total_params
+
